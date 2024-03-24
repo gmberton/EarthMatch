@@ -1,4 +1,4 @@
 .spyproject
-logs_bench
+logs
 __pycache__
 model_weights

@@ -1,0 +1,3 @@
+[submodule "image-matching-models"]
+	path = image-matching-models
+	url = https://github.com/gmberton/image-matching-models
