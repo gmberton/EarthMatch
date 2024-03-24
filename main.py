@@ -53,7 +53,7 @@ parser.add_argument("--log_dir", type=str, default="default",
 
 args = parser.parse_args()
 start_time = datetime.now()
-log_dir = Path("logs_bench") / args.log_dir / start_time.strftime('%Y-%m-%d_%H-%M-%S')
+log_dir = Path("logs") / args.log_dir / start_time.strftime('%Y-%m-%d_%H-%M-%S')
 commons.setup_logging(log_dir, stdout="info")
 logging.info(" ".join(sys.argv))
 logging.info(f"Arguments: {args}")
