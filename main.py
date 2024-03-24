@@ -12,14 +12,14 @@ from pathlib import Path
 from datetime import datetime
 import torchvision.transforms as tfm
 
-sys.path.append(str(Path('third_party/EarthMatch')))
-sys.path.append(str(Path('third_party/EarthMatch/third_party/RoMa')))
-sys.path.append(str(Path('third_party/EarthMatch/third_party/duster')))
-sys.path.append(str(Path('third_party/EarthMatch/third_party/DeDoDe')))
-sys.path.append(str(Path('third_party/EarthMatch/third_party/Steerers')))
-sys.path.append(str(Path('third_party/EarthMatch/third_party/Se2_LoFTR')))
-sys.path.append(str(Path('third_party/EarthMatch/third_party/LightGlue')))
-sys.path.append(str(Path('third_party/EarthMatch/third_party/imatch-toolbox')))
+sys.path.append(str(Path('image-matching-models')))
+sys.path.append(str(Path('image-matching-models/third_party/RoMa')))
+sys.path.append(str(Path('image-matching-models/third_party/duster')))
+sys.path.append(str(Path('image-matching-models/third_party/DeDoDe')))
+sys.path.append(str(Path('image-matching-models/third_party/Steerers')))
+sys.path.append(str(Path('image-matching-models/third_party/Se2_LoFTR')))
+sys.path.append(str(Path('image-matching-models/third_party/LightGlue')))
+sys.path.append(str(Path('image-matching-models/third_party/imatch-toolbox')))
 
 import commons
 import util_matching
