@@ -49,6 +49,11 @@ def download_image_from_url(url, num_tries=4):
 with open("images_paths.txt") as file:
     lines = file.read().splitlines()
 
+with open("aims_data.csv") as file:
+    aims_data = file.read().splitlines()[1:]
+    # data = fclt, cldp, lat, lon, nlat, nlon, tilt
+    d_mrf_data = {l.split(",")[0]: l.split(",")[1:] for l in lines}
+
 data_dir = Path("./data")
 
 for i in tqdm(range(0, len(lines), 11), desc="Downloading images, this is slow..."):

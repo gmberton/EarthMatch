@@ -1,9 +1,7 @@
 
 import cv2
-import math
 import torch
 import numpy as np
-from PIL import Image
 from lightglue import viz2d
 import matplotlib.pyplot as plt
 import torchvision.transforms as tfm
@@ -19,34 +17,13 @@ def path_to_footprint(path):
     return pred_footprint
 
 
-def px_to_coord(HW, footprint, pxx, pxy):
-    lat_per_pixel, lon_per_pixel = get_lat_lon_per_pixel(footprint, HW)
-    min_lat, min_lon, max_lat, max_lon = footprint_to_minmax_latlon(footprint)
-    lat = max_lat - (pxy * lat_per_pixel)
-    lon = min_lon + (pxx * lon_per_pixel)
-    return float(lat), float(lon)
-
-def coord_to_px(HW, footprint, lat, lon):
-    lat_per_pixel, lon_per_pixel = get_lat_lon_per_pixel(footprint, HW)
-    min_lat, min_lon, max_lat, max_lon = footprint_to_minmax_latlon(footprint)
-    pxy = (max_lat - lat) / lat_per_pixel
-    pxx = (lon - min_lon) / lon_per_pixel
-    return float(pxx), float(pxy)
-
-
-def rotate_footprint(pred_footprint, pred_rot_angle):
-    num_rots = (pred_rot_angle // 90) + 1
-    return np.array([pred_footprint[i%4] for i in range(num_rots, num_rots+4)])
-
-
-# Function to compute the transformed corners using a homography matrix
-def transform_corners(width, height, homography):
+def apply_homography_to_corners(width, height, homography):
     """
     Transform the four corners of an image of given width and height using the provided homography matrix.
     :param width: Width of the image.
     :param height: Height of the image.
     :param homography: Homography matrix.
-    :return: Transformed coordinates of the four corners.
+    :return: Transformed pixel coordinates of the four corners.
     """
     # Define the four corners of the image
     corners = np.array([
@@ -61,69 +38,6 @@ def transform_corners(width, height, homography):
     # Use the homography matrix to transform the corners
     transformed_corners = cv2.perspectiveTransform(corners, homography)
     return torch.tensor(transformed_corners).type(torch.int)[:, 0]
-
-
-def tile_to_lat_lon_corners(zoom, row, col):
-    num_tiles = 2 ** zoom
-    tile_lon_width = 360.0 / num_tiles
-    min_lon = col * tile_lon_width - 180.0
-    max_lon = (col + 1) * tile_lon_width - 180.0
-    max_lat = math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * row / num_tiles))))
-    min_lat = math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * (row + 1) / num_tiles))))
-    return min_lat, max_lat, min_lon, max_lon
-
-
-def get_image_with_neighbors(db_img_path, d_zrc_path, HW):
-    """Return PIL image with surroundings of chosen image"""
-    zoom, row, col = db_img_path.name.split("@")[9].split("_")
-    zoom, row, col = [int(e) for e in [zoom, row, col]]
-    min_lat1, max_lat1, min_lon1, max_lon1 = tile_to_lat_lon_corners(zoom, row+7, col-4)
-    min_lat2, max_lat2, min_lon2, max_lon2 = tile_to_lat_lon_corners(zoom, row-4, col+7)
-    min_lat = min(min_lat1, min_lat2)
-    max_lat = max(max_lat1, max_lat2)
-    min_lon = min(min_lon1, min_lon2)
-    max_lon = max(max_lon1, max_lon2)
-    lat_per_pixel = (max_lat - min_lat) / (HW * 3)
-    lon_per_pixel = (max_lon - min_lon) / (HW * 3)
-    center_min_lat = min_lat + HW * lat_per_pixel
-    center_max_lat = min_lat + HW * lat_per_pixel * 2
-    center_min_lon = min_lon + HW * lon_per_pixel
-    center_max_lon = min_lon + HW * lon_per_pixel * 2
-    
-    surrounding_img = np.zeros([HW*3, HW*3, 3], dtype=np.uint8)
-    surrounding_img[:, :] = 24, 43, 75
-    for r in range(-1, 2, 1):
-        for c in range(-1, 2, 1):
-            try:
-                p = d_zrc_path[f"{zoom:02d}_{row+r*4:04d}_{col+c*4:04d}"]
-                if c == r == 0:
-                    assert p == str(db_img_path), f"{p}\n{db_img_path}"
-                img = np.array(Image.open(p))
-                surrounding_img[(r+1)*HW : (r+2)*HW, (c+1)*HW : (c+2)*HW] = img
-            except KeyError:
-                pass
-    surrounding_footprint = np.array([[min_lat, min_lon], [max_lat, min_lon], [max_lat, max_lon], [min_lat, max_lon]])
-    center_footprint = np.array([[center_min_lat, center_min_lon], [center_max_lat, center_min_lon],
-                                 [center_max_lat, center_max_lon], [center_min_lat, center_max_lon]])
-    return tfm.Resize(HW*3)(Image.fromarray(surrounding_img)), \
-        min_lat, min_lon, max_lat, max_lon, \
-        center_min_lat, center_min_lon, center_max_lat, center_max_lon, \
-        surrounding_footprint, center_footprint
-
-
-def batch_geodesic_distances(origin, destination):
-    assert type(origin) == type(destination) == torch.Tensor
-    assert origin.shape[1] == destination.shape[1] == 2
-    radius = 6371 # km
-    lat1, lon1 = origin.T
-    lat2, lon2 = destination.T
-    dlat = torch.deg2rad(lat2-lat1)
-    dlon = torch.deg2rad(lon2-lon1)
-    a = torch.sin(dlat/2) * torch.sin(dlat/2) + torch.cos(torch.deg2rad(lat1)) \
-        * torch.cos(torch.deg2rad(lat2)) * torch.sin(dlon/2) * torch.sin(dlon/2)
-    c = 2 * torch.atan2(torch.sqrt(a), torch.sqrt(1-a))
-    distances = radius * c
-    return distances
 
 
 def compute_matching(image0, image1, matcher, save_images=False, viz_params=None):
@@ -161,6 +75,7 @@ def footprint_to_minmax_latlon(footprint):
     max_lon = lons.max()
     return min_lat, min_lon, max_lat, max_lon
 
+
 def get_lat_lon_per_pixel(footprint, HW):
     """Return the change in lat lon per each pixel"""
     min_lat, min_lon, max_lat, max_lon = footprint_to_minmax_latlon(footprint)
@@ -169,7 +84,7 @@ def get_lat_lon_per_pixel(footprint, HW):
     return lat_per_pixel, lon_per_pixel
 
 
-def warp_footprint_equirectangular_image(pred_footprint, transformed_corners, HW):
+def apply_homography_to_footprint(pred_footprint, transformed_corners, HW):
     lat_per_pixel, lon_per_pixel = get_lat_lon_per_pixel(pred_footprint, HW)
     min_lat, min_lon, max_lat, max_lon = footprint_to_minmax_latlon(pred_footprint)
     
@@ -207,12 +122,9 @@ def estimate_footprint(
     ----------
     fm : fundamental matrix from previous iteration (None if first iteration).
     query_image : torch.tensor with the query image
-    surrounding_image : TYPE
-        DESCRIPTION.
-    matcher : TYPE
-        DESCRIPTION.
-    surrounding_img_footprint : TYPE
-        DESCRIPTION.
+    surrounding_image : torch.tensor with the surrounding image
+    matcher : a matcher from the image-matching-models.
+    surrounding_img_footprint : TODO
     HW : TYPE
         DESCRIPTION.
     save_images : TYPE, optional
@@ -235,12 +147,12 @@ def estimate_footprint(
     assert surrounding_image.shape[1] == surrounding_image.shape[2], f"{surrounding_image.shape}"
     
     if fm is not None:
-        transformed_corners = transform_corners(HW, HW, fm) + HW
+        transformed_corners = apply_homography_to_corners(HW, HW, fm) + HW
         endpoints = [[HW, HW], [HW*2, HW], [HW*2, HW*2], [HW, HW*2]]
         warped_surrounding_pred_img = tfm.functional.perspective(
             surrounding_image, transformed_corners.numpy(), endpoints, InterpolationMode.BILINEAR
         )
-        warped_pred_footprint = warp_footprint_equirectangular_image(surrounding_img_footprint, transformed_corners, HW*3)
+        warped_pred_footprint = apply_homography_to_footprint(surrounding_img_footprint, transformed_corners, HW*3)
     else:
         warped_surrounding_pred_img = surrounding_image
         warped_pred_footprint = surrounding_img_footprint
