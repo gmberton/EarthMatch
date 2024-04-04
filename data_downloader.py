@@ -50,15 +50,18 @@ with open("images_paths.txt") as file:
     lines = file.read().splitlines()
 
 with open("aims_data.csv") as file:
-    aims_data = file.read().splitlines()[1:]
+    aims_data_lines = file.read().splitlines()[1:]
     # data = fclt, cldp, lat, lon, nlat, nlon, tilt
-    d_mrf_data = {l.split(",")[0]: l.split(",")[1:] for l in lines}
+    d_mrf_data = {l.split(",")[0]: l.split(",")[1:] for l in aims_data_lines}
 
 data_dir = Path("./data")
 
 for i in tqdm(range(0, len(lines), 11), desc="Downloading images, this is slow..."):
     # MRF is mission-roll-frame
     mrf, query_filename = lines[i].split("/")
+    
+    fclt, cldp, lat, lon, nlat, nlon, tilt = d_mrf_data[mrf]
+    query_filename = "@".join([lat, lon, nlat, nlon, tilt, fclt, cldp]) + ".jpg"
     mission = mrf.split("-")[0]
     
     q_path = data_dir / mrf / query_filename
