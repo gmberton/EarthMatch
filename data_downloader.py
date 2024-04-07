@@ -61,7 +61,7 @@ for i in tqdm(range(0, len(lines), 11), desc="Downloading images, this is slow..
     mrf, query_filename = lines[i].split("/")
     
     fclt, cldp, lat, lon, nlat, nlon, tilt = d_mrf_data[mrf]
-    query_filename = "@".join([lat, lon, nlat, nlon, tilt, fclt, cldp]) + ".jpg"
+    query_filename = "@" + "@".join([lat, lon, nlat, nlon, tilt, fclt, cldp]) + "@.jpg"
     mission = mrf.split("-")[0]
     
     q_path = data_dir / mrf / query_filename

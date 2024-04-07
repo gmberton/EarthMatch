@@ -85,6 +85,15 @@ def get_lat_lon_per_pixel(footprint, HW):
 
 
 def apply_homography_to_footprint(pred_footprint, transformed_corners, HW):
+
+    # TODO these 6 lines are because the surrounding_pred_footprint is wrong, and it is actually the pred_footprint.
+    center = pred_footprint.mean(0)
+    diff = pred_footprint.max(0)[0] - pred_footprint.min(0)[0]
+    diff *= 1.5
+    min_lat, min_lon = center - diff
+    max_lat, max_lon = center + diff
+    pred_footprint = np.array([min_lat, min_lon, max_lat, min_lon, max_lat, max_lon, min_lat, max_lon]).reshape(4, 2)
+
     lat_per_pixel, lon_per_pixel = get_lat_lon_per_pixel(pred_footprint, HW)
     min_lat, min_lon, max_lat, max_lon = footprint_to_minmax_latlon(pred_footprint)
     
@@ -142,6 +151,7 @@ def estimate_footprint(
         DESCRIPTION.
     TYPE
         DESCRIPTION.
+    TODO
 
     """
     assert surrounding_image.shape[1] == surrounding_image.shape[2], f"{surrounding_image.shape}"
@@ -152,23 +162,16 @@ def estimate_footprint(
         warped_surrounding_pred_img = tfm.functional.perspective(
             surrounding_image, transformed_corners.numpy(), endpoints, InterpolationMode.BILINEAR
         )
-        warped_pred_footprint = apply_homography_to_footprint(surrounding_img_footprint, transformed_corners, HW*3)
+        # warped_pred_footprint = apply_homography_to_footprint(surrounding_img_footprint, transformed_corners, HW*3)
     else:
         warped_surrounding_pred_img = surrounding_image
-        warped_pred_footprint = surrounding_img_footprint
+        # warped_pred_footprint = surrounding_img_footprint
     
     assert tuple(warped_surrounding_pred_img.shape) == (3, HW*3, HW*3)
     warped_pred_img = warped_surrounding_pred_img[:, HW:HW*2, HW:HW*2]
     
     if save_images:
         tfm.ToPILImage()(warped_pred_img).save(viz_params["pred_path"])
-    
-    # path0 = viz_params["path0"]
-    # path1 = viz_params["path1"]
-    # output_dir = viz_params["output_dir"]
-    # output_file_suffix = viz_params["output_file_suffix"]
-        # path0=query_path, path1=pred_path,
-        # output_dir=output_dir, output_file_suffix=f"{iteration}"
     
     num_inliers, new_fm = compute_matching(
         image0=query_image, image1=warped_pred_img,
@@ -184,6 +187,8 @@ def estimate_footprint(
     else:
         fm = add_homographies_fm(fm, new_fm)
     
+    transformed_corners = apply_homography_to_corners(HW, HW, fm) + HW
+    warped_pred_footprint = apply_homography_to_footprint(surrounding_img_footprint, transformed_corners, HW*3)
     pretty_printed_footprint = "; ".join([f"{lat_lon[0]:.5f}, {lat_lon[1]:.5f}" for lat_lon in warped_pred_footprint])
     return num_inliers, fm, warped_pred_footprint, pretty_printed_footprint
 
