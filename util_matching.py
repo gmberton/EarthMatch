@@ -1,10 +1,12 @@
 
 import cv2
 import torch
+import shapely
 import numpy as np
 from lightglue import viz2d
 import matplotlib.pyplot as plt
 import torchvision.transforms as tfm
+from sklearn.linear_model import LogisticRegression
 from torchvision.transforms.functional import InterpolationMode
 
 
@@ -122,6 +124,25 @@ def add_homographies_fm(fm1, fm2):
     return np.linalg.inv(np.linalg.inv(fm2) @ np.linalg.inv(fm1))
 
 
+def compute_threshold(true_matches, false_matches, thresh=0.999):
+    assert isinstance(true_matches, list)
+    assert isinstance(false_matches, list)
+    if (len(true_matches) < 4):
+        return 4
+    # logistic_model = lambda x: 1 / (1 + np.exp(-x))
+    X_r = np.array(true_matches).reshape(-1, 1)
+    X_w = np.array(false_matches).reshape(-1, 1)
+    X = np.concatenate((X_r, X_w))
+    Y_r = np.ones(len(true_matches), dtype=int)
+    Y_w = np.zeros(len(false_matches), dtype=int)
+    Y = np.concatenate((Y_r, Y_w))
+    lr = LogisticRegression()
+    lr.fit(X, Y)
+    f_y = - np.log((1-thresh)/thresh)
+    match_thresh = (f_y - lr.intercept_)/lr.coef_
+    return match_thresh.item()
+
+
 def estimate_footprint(
     fm, query_image, surrounding_image, matcher,  surrounding_img_footprint, HW,
     save_images=False, viz_params=None
@@ -193,3 +214,61 @@ def estimate_footprint(
     return num_inliers, fm, warped_pred_footprint, pretty_printed_footprint
 
 
+def enlarge_polygon(polygon, scale_factor):
+    cntr = polygon.centroid
+    scaled_coords = [(cntr.x + (lat - cntr.x) * scale_factor, cntr.y + (lon - cntr.y) * scale_factor)
+                     for lat, lon in zip(*polygon.exterior.xy)]
+    scaled_polygon = shapely.Polygon(scaled_coords)
+    return scaled_polygon
+
+
+def get_polygon(lats_lons):
+    assert isinstance(lats_lons, np.ndarray)
+    assert lats_lons.shape == (4, 2)
+    polygon = shapely.Polygon(lats_lons)
+    return polygon
+
+
+def get_query_metadata(query_filename):
+    _, lat, lon, nlat, nlon, tilt, fclt, cldp, mrf, _ = query_filename.split("@")
+    return int(tilt), int(fclt), int(cldp)
+
+
+def fclt_le_200(q_name):
+    tilt, fclt, cldp = get_query_metadata(q_name)
+    return fclt <= 200
+
+
+def fclt_200_400(q_name):
+    tilt, fclt, cldp = get_query_metadata(q_name)
+    return 200 <= fclt < 400
+
+
+def fclt_400_800(q_name):
+    tilt, fclt, cldp = get_query_metadata(q_name)
+    return 400 <= fclt < 800
+
+
+def fclt_g_800(q_name):
+    tilt, fclt, cldp = get_query_metadata(q_name)
+    return 800 <= fclt
+
+
+def tilt_ge_40(q_name):
+    tilt, fclt, cldp = get_query_metadata(q_name)
+    return tilt >= 40
+
+
+def tilt_l_40(q_name):
+    tilt, fclt, cldp = get_query_metadata(q_name)
+    return tilt < 40
+
+
+def cldp_ge_40(q_name):
+    tilt, fclt, cldp = get_query_metadata(q_name)
+    return cldp >= 40
+
+
+def cldp_l_40(q_name):
+    tilt, fclt, cldp = get_query_metadata(q_name)
+    return cldp < 40
