@@ -26,13 +26,13 @@ from matching import get_matcher
 torch.set_grad_enabled(False)
 
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument("--method", type=str, default="sift-lg", help="_")
+parser.add_argument("--matcher", type=str, default="sift-lg", help="_")
 parser.add_argument("-nk", "--max_num_keypoints", type=int, default=2048, help="_")
 parser.add_argument("-ni", "--num_iterations", type=int, default=10, help="_")
 parser.add_argument("-is", "--img_size", type=int, default=1024, help="_")
 parser.add_argument("--save_images", action='store_true', help="_")
-parser.add_argument("--data_dir", type=str, default="./data", help="_")
 parser.add_argument("--device", type=str, default="cuda", choices=["cuda", "cpu"], help="_")
+parser.add_argument("--data_dir", type=str, default="./data", help="_")
 parser.add_argument("--log_dir", type=str, default="default",
                     help="name of directory on which to save the logs, under logs/log_dir")
 
@@ -47,7 +47,7 @@ logging.info(f"The outputs are being saved in {log_dir}")
 args.data_dir = Path(args.data_dir)
 assert args.data_dir.exists()
 
-matcher = get_matcher(args.method, device=args.device, max_num_keypoints=args.max_num_keypoints)
+matcher = get_matcher(args.matcher, device=args.device, max_num_keypoints=args.max_num_keypoints)
 
 queries_input_folders = sorted(list(args.data_dir.glob("*")))
 
