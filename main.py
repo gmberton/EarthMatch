@@ -53,7 +53,7 @@ queries_input_folders = sorted(list(args.data_dir.glob("*")))
 
 all_results = []
 
-for folder in tqdm(queries_input_folders, ncols=120):
+for folder in tqdm(queries_input_folders):
     paths = sorted(list(folder.glob("*")))
     assert len(paths) == 11  # One query and its 10 predictions, therefore 11 files
     query_path = paths[0]
@@ -115,6 +115,9 @@ torch.save(all_results, log_dir / "results.torch")
 
 num_inliers_for_true_positives = [res[2] for res in all_results if res[-1] is True]
 num_inliers_for_false_positives = [res[2] for res in all_results if res[-1] is False]
+if len(num_inliers_for_false_positives) == 0:
+    num_inliers_for_false_positives = [0]
+
 threshold = util_matching.compute_threshold(num_inliers_for_true_positives, num_inliers_for_false_positives, thresh=0.999)
 
 results_per_query = defaultdict(list)
