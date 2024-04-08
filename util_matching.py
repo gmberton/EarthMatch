@@ -229,46 +229,51 @@ def get_polygon(lats_lons):
     return polygon
 
 
-def get_query_metadata(query_filename):
-    _, lat, lon, nlat, nlon, tilt, fclt, cldp, mrf, _ = query_filename.split("@")
-    return int(tilt), int(fclt), int(cldp)
+def get_query_metadata(query_path):
+    _, lat, lon, nlat, nlon, tilt, fclt, cldp, mrf, _ = str(query_path).split("@")
+    return float(lat), float(lon), int(tilt), int(fclt), int(cldp)
 
 
-def fclt_le_200(q_name):
-    tilt, fclt, cldp = get_query_metadata(q_name)
+def get_centerpoint_from_query_path(query_path):
+    lat, lon, tilt, fclt, cldp = get_query_metadata(query_path)
+    return shapely.Point(lat, lon)
+
+
+def fclt_le_200(query_path):
+    lat, lon, tilt, fclt, cldp = get_query_metadata(query_path)
     return fclt <= 200
 
 
-def fclt_200_400(q_name):
-    tilt, fclt, cldp = get_query_metadata(q_name)
+def fclt_200_400(query_path):
+    lat, lon, tilt, fclt, cldp = get_query_metadata(query_path)
     return 200 <= fclt < 400
 
 
-def fclt_400_800(q_name):
-    tilt, fclt, cldp = get_query_metadata(q_name)
+def fclt_400_800(query_path):
+    lat, lon, tilt, fclt, cldp = get_query_metadata(query_path)
     return 400 <= fclt < 800
 
 
-def fclt_g_800(q_name):
-    tilt, fclt, cldp = get_query_metadata(q_name)
+def fclt_g_800(query_path):
+    lat, lon, tilt, fclt, cldp = get_query_metadata(query_path)
     return 800 <= fclt
 
 
-def tilt_ge_40(q_name):
-    tilt, fclt, cldp = get_query_metadata(q_name)
+def tilt_ge_40(query_path):
+    lat, lon, tilt, fclt, cldp = get_query_metadata(query_path)
     return tilt >= 40
 
 
-def tilt_l_40(q_name):
-    tilt, fclt, cldp = get_query_metadata(q_name)
+def tilt_l_40(query_path):
+    lat, lon, tilt, fclt, cldp = get_query_metadata(query_path)
     return tilt < 40
 
 
-def cldp_ge_40(q_name):
-    tilt, fclt, cldp = get_query_metadata(q_name)
+def cldp_ge_40(query_path):
+    lat, lon, tilt, fclt, cldp = get_query_metadata(query_path)
     return cldp >= 40
 
 
-def cldp_l_40(q_name):
-    tilt, fclt, cldp = get_query_metadata(q_name)
+def cldp_l_40(query_path):
+    lat, lon, tilt, fclt, cldp = get_query_metadata(query_path)
     return cldp < 40

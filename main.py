@@ -56,13 +56,12 @@ all_results = []
 for folder in tqdm(queries_input_folders, ncols=120):
     paths = sorted(list(folder.glob("*")))
     assert len(paths) == 11  # One query and its 10 predictions, therefore 11 files
-    query_path = Path(paths[0])
+    query_path = paths[0]
     query_centerpoint = util_matching.get_centerpoint_from_query_path(query_path)
     preds_paths = paths[1:]
     for pred_idx, surrounding_pred_path in enumerate(preds_paths):
         try:
             query_log_dir = log_dir / query_path.stem / f"{pred_idx:02d}"
-            surrounding_pred_path = Path(surrounding_pred_path)
             rot_angle = int(surrounding_pred_path.name.split("__")[2].replace("rot", ""))
             assert rot_angle % 90 == 0
             query_image = matcher.image_loader(query_path, args.img_size).to(args.device)
