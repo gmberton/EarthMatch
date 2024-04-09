@@ -155,6 +155,7 @@ for query_name, results in results_per_query.items():
                 located_cldp_l_40 += 1
             break
 
+logging.info(f"{threshold=}")
 logging.info(
     f"{located=} "
     f"{located_fclt_le_200=} {located_fclt_200_400=} {located_fclt_400_800=} {located_fclt_g_800=} "
