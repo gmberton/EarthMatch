@@ -116,9 +116,10 @@ torch.save(all_results, log_dir / "results.torch")
 num_inliers_for_true_positives = [res[2] for res in all_results if res[-1] is True]
 num_inliers_for_false_positives = [res[2] for res in all_results if res[-1] is False]
 if len(num_inliers_for_false_positives) == 0:
-    num_inliers_for_false_positives = [0]
-
-threshold = util_matching.compute_threshold(num_inliers_for_true_positives, num_inliers_for_false_positives, thresh=0.999)
+    # The model never reached convergence for a false positive
+    threshold = -1
+else:
+    threshold = util_matching.compute_threshold(num_inliers_for_true_positives, num_inliers_for_false_positives, thresh=0.999)
 
 results_per_query = defaultdict(list)
 for res in all_results:
