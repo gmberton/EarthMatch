@@ -178,15 +178,14 @@ def estimate_footprint(
     assert surrounding_image.shape[1] == surrounding_image.shape[2], f"{surrounding_image.shape}"
     
     if fm is not None:
+        # Use the FM (i.e. homography) from the previous iteration to generate the new candidate
         transformed_corners = apply_homography_to_corners(HW, HW, fm) + HW
         endpoints = [[HW, HW], [HW*2, HW], [HW*2, HW*2], [HW, HW*2]]
         warped_surrounding_pred_img = tfm.functional.perspective(
             surrounding_image, transformed_corners.numpy(), endpoints, InterpolationMode.BILINEAR
         )
-        # warped_pred_footprint = apply_homography_to_footprint(surrounding_img_footprint, transformed_corners, HW*3)
     else:
         warped_surrounding_pred_img = surrounding_image
-        # warped_pred_footprint = surrounding_img_footprint
     
     assert tuple(warped_surrounding_pred_img.shape) == (3, HW*3, HW*3)
     warped_pred_img = warped_surrounding_pred_img[:, HW:HW*2, HW:HW*2]
@@ -201,14 +200,24 @@ def estimate_footprint(
     )
     
     if num_inliers == 0:
+        # If no inliers are found, stop the iterative process
         return num_inliers, None, None, None
     
-    if fm is None:  # At first iteration fm is None
+    if fm is None:  # At the first iteration fm is None
         fm = new_fm
     else:
         fm = add_homographies_fm(fm, new_fm)
     
     transformed_corners = apply_homography_to_corners(HW, HW, fm) + HW
+
+    pred_polygon = shapely.Polygon((transformed_corners - HW) / HW)
+    if not pred_polygon.convex_hull.equals(pred_polygon):
+        # If the prediction has a non-convex footprint, it is considered not valid
+        return -1, None, None, None
+    if pred_polygon.area > 9:
+        # If the prediction's area is bigger than the surrounding_image's area, it is considered not valid
+        return -1, None, None, None
+
     warped_pred_footprint = apply_homography_to_footprint(surrounding_img_footprint, transformed_corners, HW*3)
     pretty_printed_footprint = "; ".join([f"{lat_lon[0]:.5f}, {lat_lon[1]:.5f}" for lat_lon in warped_pred_footprint])
     return num_inliers, fm, warped_pred_footprint, pretty_printed_footprint
