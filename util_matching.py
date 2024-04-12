@@ -268,21 +268,21 @@ def fclt_g_800(query_path):
     return 800 < fclt
 
 
-def tilt_ge_40(query_path):
-    lat, lon, tilt, fclt, cldp = get_query_metadata(query_path)
-    return tilt >= 40
-
-
 def tilt_l_40(query_path):
     lat, lon, tilt, fclt, cldp = get_query_metadata(query_path)
     return tilt < 40
 
 
-def cldp_ge_40(query_path):
+def tilt_ge_40(query_path):
     lat, lon, tilt, fclt, cldp = get_query_metadata(query_path)
-    return cldp >= 40
+    return tilt >= 40
 
 
 def cldp_l_40(query_path):
     lat, lon, tilt, fclt, cldp = get_query_metadata(query_path)
     return cldp < 40
+
+
+def cldp_ge_40(query_path):
+    lat, lon, tilt, fclt, cldp = get_query_metadata(query_path)
+    return cldp >= 40
