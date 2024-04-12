@@ -255,12 +255,12 @@ def fclt_le_200(query_path):
 
 def fclt_200_400(query_path):
     lat, lon, tilt, fclt, cldp = get_query_metadata(query_path)
-    return 200 <= fclt < 400
+    return 200 < fclt <= 400
 
 
 def fclt_400_800(query_path):
     lat, lon, tilt, fclt, cldp = get_query_metadata(query_path)
-    return 400 <= fclt < 800
+    return 400 < fclt <= 800
 
 
 def fclt_g_800(query_path):
