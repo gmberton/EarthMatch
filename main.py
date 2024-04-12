@@ -97,7 +97,7 @@ for folder in tqdm(queries_input_folders):
                     found_match = False
                     logging.debug(f"{query_path.stem} {pred_idx=} {iteration=:02d} MSG1_NOT_FOUND {num_inliers=}")
                     break
-                pred_polygon = util_matching.get_polygon(predicted_footprint.numpy()).convex_hull  # TODO probably convex_hull can be removed
+                pred_polygon = util_matching.get_polygon(predicted_footprint.numpy())
                 pred_polygon = util_matching.enlarge_polygon(pred_polygon, 3)
                 if pred_polygon.contains(query_centerpoint):
                     logging.debug(f"{query_path.stem} {pred_idx=} {iteration=:02d} MSG2_FOUND_CORRECT {num_inliers=} pred={pretty_printed_footprint}")
