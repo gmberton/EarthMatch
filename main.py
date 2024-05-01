@@ -95,21 +95,27 @@ for folder in tqdm(queries_input_folders):
                     viz_params=viz_params
                 )
                 if num_inliers == 0:
+                    # The iterative search is interruped due to invalid matching
                     found_match = False
                     logging.debug(f"{query_path.stem} {pred_idx=} {iteration=:02d} MSG1_NOT_FOUND {num_inliers=}")
                     break
                 pred_polygon = util_matching.get_polygon(predicted_footprint.numpy())
+                # The polygon is enlarged by 9x because some of the manual labels are slightly
+                # outside the image's boundaries
                 pred_polygon = util_matching.enlarge_polygon(pred_polygon, 3)
                 if pred_polygon.contains(query_centerpoint):
-                    logging.debug(f"{query_path.stem} {pred_idx=} {iteration=:02d} MSG2_FOUND_CORRECT {num_inliers=} pred={pretty_printed_footprint}")
+                    # A true positive has been found
+                    logging.debug(f"{query_path.stem} {pred_idx=} {iteration=:02d} MSG2_FOUND_TP {num_inliers=} pred={pretty_printed_footprint}")
                     if iteration == args.num_iterations - 1:
                         all_results.append((query_path.stem, pred_idx, num_inliers, predicted_footprint, True))
                 else:
-                    logging.debug(f"{query_path.stem} {pred_idx=} {iteration=:02d} MSG3_FOUND_WRONG {num_inliers=} pred={pretty_printed_footprint}")
+                    # A false positive has been found
+                    logging.debug(f"{query_path.stem} {pred_idx=} {iteration=:02d} MSG3_FOUND_FP {num_inliers=} pred={pretty_printed_footprint}")
                     if iteration == args.num_iterations - 1:
                         all_results.append((query_path.stem, pred_idx, num_inliers, predicted_footprint, False))
             
         except (ValueError, torch._C._LinAlgError, cv2.error, IndexError, AttributeError) as e:
+            # Some of the implemented models throw errors in some unusual situations
             logging.debug(f"{query_path.stem} {pred_idx=} {iteration=:02d} MSG4_ERROR Error {e}")
 
 torch.save(all_results, log_dir / "results.torch")
