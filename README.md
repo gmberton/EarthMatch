@@ -15,7 +15,7 @@ cd EarthMatch
 # Download the data
 rsync -rhz --info=progress2 --ignore-existing rsync://vandaldata.polito.it/sf_xl/EarthMatch/data .
 # Run the experiment with SIFT-LightGlue
-python main.py --matcher sift-lg --max_num_keypoints 2048 --img_size 512 --log_dir out_sift-lg --save_images
+python main.py --matcher sift-lg --max_num_keypoints 2048 --img_size 512 --data_dir data --log_dir out_sift-lg --save_images
 ```
 
 The data contains 268 astronaut photos and, for each of them, the top-10 predictions obtained from a worldwide database with an enhanced version of EarthMatch.

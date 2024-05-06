@@ -46,7 +46,7 @@ logging.info(f"Arguments: {args}")
 logging.info(f"The outputs are being saved in {log_dir}")
 
 args.data_dir = Path(args.data_dir)
-assert args.data_dir.exists()
+assert args.data_dir.exists(), f"{args.data_dir} does not exist"
 
 matcher = get_matcher(args.matcher, device=args.device, max_num_keypoints=args.max_num_keypoints)
 
