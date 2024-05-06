@@ -24,7 +24,7 @@ You can set the matcher to any of the 17 matchers used in the [image-matching-mo
 
 
 ## Cite
-`
+```
 @InProceedings{Berton_2024_EarthMatch,
     author    = {Gabriele Berton, Gabriele Goletto, Gabriele Trivigno, Alex Stoken, Barbara Caputo, Carlo Masone},
     title     = {EarthMatch: Iterative Coregistration for Fine-grained Localization of Astronaut Photography},
@@ -32,4 +32,4 @@ You can set the matcher to any of the 17 matchers used in the [image-matching-mo
     month     = {June},
     year      = {2024},
 }
-`
+```
