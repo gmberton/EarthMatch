@@ -6,19 +6,21 @@ EarthMatch is an image-matching / coregistration pipeline used to localize photo
 
 The paper, called "EarthMatch: Iterative Coregistration for Fine-grained Localization of Astronaut Photography" is accepted to the 2024 CVPR workshop of "Image Matching: Local Features & Beyond 2024".
 
-## Download the data
+## Run the experiments
 
 ```
+# Clone the repo
+git clone --recursive https://github.com/gmberton/EarthMatch
+cd EarthMatch
+# Download the data
 rsync -rhz --info=progress2 --ignore-existing rsync://vandaldata.polito.it/sf_xl/EarthMatch/data .
-```
-
-## Run experiment
-
-You can run
-```
+# Run the experiment with SIFT-LightGlue
 python main.py --matcher sift-lg --max_num_keypoints 2048 --img_size 512 --save_images
 ```
-which will run the experiment and save all visualizations in `./logs/`
+
+The data contains 268 astronaut photos and, for each of them, the top-10 predictions obtained from a worldwide database with an enhanced version of EarthMatch.
+
+The logs and visualizations will be automatically saved in `./logs/` (note that using `--save_images` will save images for all results and slow down the experiment.
 
 You can set the matcher to any of the 17 matchers used in the [image-matching-models repo](https://github.com/gmberton/image-matching-models).
 
