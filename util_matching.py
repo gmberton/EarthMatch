@@ -11,6 +11,7 @@ from torchvision.transforms.functional import InterpolationMode
 
 
 def path_to_footprint(path):
+    """Given the path of a prediction, get its footprint (i.e. 4 corners) lat and lon"""
     _, min_lat, min_lon, _, _, max_lat, max_lon = str(path).split("@")[:7]
     min_lat, min_lon, max_lat, max_lon = float(min_lat), float(min_lon), float(max_lat), float(max_lon)
     pred_footprint = np.array([min_lat, min_lon, max_lat, min_lon, max_lat, max_lon, min_lat, max_lon])
@@ -19,13 +20,13 @@ def path_to_footprint(path):
     return pred_footprint
 
 
-def apply_homography_to_corners(width, height, homography):
+def apply_homography_to_corners(width, height, fm):
     """
     Transform the four corners of an image of given width and height using the provided homography matrix.
     :param width: Width of the image.
     :param height: Height of the image.
-    :param homography: Homography matrix.
-    :return: Transformed pixel coordinates of the four corners.
+    :param fm: Homography fundamental matrix.
+    :return: New pixel coordinates of the four corners after homography.
     """
     # Define the four corners of the image
     corners = np.array([
@@ -38,7 +39,7 @@ def apply_homography_to_corners(width, height, homography):
     corners = np.array([corners])
     corners = np.reshape(corners, (4, 1, 2))
     # Use the homography matrix to transform the corners
-    transformed_corners = cv2.perspectiveTransform(corners, homography)
+    transformed_corners = cv2.perspectiveTransform(corners, fm)
     return torch.tensor(transformed_corners).type(torch.int)[:, 0]
 
 
@@ -88,16 +89,15 @@ def get_lat_lon_per_pixel(footprint, HW):
 
 def apply_homography_to_footprint(pred_footprint, transformed_corners, HW):
 
-    # TODO these 6 lines are because the surrounding_pred_footprint is wrong, and it is actually the pred_footprint.
     center = pred_footprint.mean(0)
     diff = pred_footprint.max(0)[0] - pred_footprint.min(0)[0]
     diff *= 1.5
     min_lat, min_lon = center - diff
     max_lat, max_lon = center + diff
-    pred_footprint = np.array([min_lat, min_lon, max_lat, min_lon, max_lat, max_lon, min_lat, max_lon]).reshape(4, 2)
+    surrounding_pred_footprint = np.array([min_lat, min_lon, max_lat, min_lon, max_lat, max_lon, min_lat, max_lon]).reshape(4, 2)
 
-    lat_per_pixel, lon_per_pixel = get_lat_lon_per_pixel(pred_footprint, HW)
-    min_lat, min_lon, max_lat, max_lon = footprint_to_minmax_latlon(pred_footprint)
+    lat_per_pixel, lon_per_pixel = get_lat_lon_per_pixel(surrounding_pred_footprint, HW)
+    min_lat, min_lon, max_lat, max_lon = footprint_to_minmax_latlon(surrounding_pred_footprint)
     
     px_lats = transformed_corners[:, 1]
     px_lons = transformed_corners[:, 0]
@@ -144,36 +144,31 @@ def compute_threshold(true_matches, false_matches, thresh=0.999):
 
 
 def estimate_footprint(
-    fm, query_image, surrounding_image, matcher,  surrounding_img_footprint, HW,
+    fm, query_image, surrounding_image, matcher, pred_footprint, HW,
     save_images=False, viz_params=None
 ):
-    """
+    """Estimate the footprint of the query given a prediction/candidate.
+    This is equivalent of a single iteration of EarthMatch.
+
     Parameters
     ----------
-    fm : fundamental matrix from previous iteration (None if first iteration).
-    query_image : torch.tensor with the query image
-    surrounding_image : torch.tensor with the surrounding image
+    fm : np.array of shape (3, 3), the fundamental matrix from previous iteration (None if first iteration).
+    query_image : torch.tensor of shape (3, H, W) with the query image.
+    surrounding_image : torch.tensor of shape (3, H, W) with the surrounding image.
     matcher : a matcher from the image-matching-models.
-    surrounding_img_footprint : TODO
-    HW : TYPE
-        DESCRIPTION.
-    save_images : TYPE, optional
-        DESCRIPTION. The default is False.
-    viz_params : TYPE, optional
-        DESCRIPTION. The default is None.
+    pred_footprint : torch.tensor of shape (4, 2) with the prediction's footprint.
+    HW : int, the height and width of the images.
+    save_images : bool, if true then save matching's visualizations.
+    viz_params : parameters used for visualizations if save_images is True
 
     Returns
     -------
-    num_inliers : TYPE
-        DESCRIPTION.
-    TYPE
-        DESCRIPTION.
-    TYPE
-        DESCRIPTION.
-    TYPE
-        DESCRIPTION.
-    TODO
+    num_inliers : int, number of inliers from the matching.
+    fm : np.array of shape (3, 3), the new fundamental matrix mapping query to prediction.
+    warped_pred_footprint : torch.tensor of shape (4, 2) with the pred_footprint after applying fm's homography.
+    pretty_printed_footprint : str, a pretty printed warped_pred_footprint.
 
+    If the prediction is deemed invalid, return (-1, None, None, None).
     """
     assert surrounding_image.shape[1] == surrounding_image.shape[2], f"{surrounding_image.shape}"
     
@@ -201,7 +196,7 @@ def estimate_footprint(
     
     if num_inliers == 0:
         # If no inliers are found, stop the iterative process
-        return num_inliers, None, None, None
+        return -1, None, None, None
     
     if fm is None:  # At the first iteration fm is None
         fm = new_fm
@@ -218,7 +213,7 @@ def estimate_footprint(
         # If the prediction's area is bigger than the surrounding_image's area, it is considered not valid
         return -1, None, None, None
 
-    warped_pred_footprint = apply_homography_to_footprint(surrounding_img_footprint, transformed_corners, HW*3)
+    warped_pred_footprint = apply_homography_to_footprint(pred_footprint, transformed_corners, HW*3)
     pretty_printed_footprint = "; ".join([f"{lat_lon[0]:.5f}, {lat_lon[1]:.5f}" for lat_lon in warped_pred_footprint])
     return num_inliers, fm, warped_pred_footprint, pretty_printed_footprint
 
@@ -239,6 +234,9 @@ def get_polygon(lats_lons):
 
 
 def get_query_metadata(query_path):
+    """Given the path of the query, extract and return the
+    center_lat, center_lon, tilt (i.e. obliqueness), focal length and cloud percentage.
+    """
     _, lat, lon, nlat, nlon, tilt, fclt, cldp, mrf, _ = str(query_path).split("@")
     return float(lat), float(lon), int(tilt), int(fclt), int(cldp)
 

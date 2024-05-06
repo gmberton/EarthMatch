@@ -56,19 +56,21 @@ all_results = []
 
 for folder in tqdm(queries_input_folders):
     paths = sorted(list(folder.glob("*")))
-    assert len(paths) == 11  # One query and its 10 predictions, therefore 11 files
+    # Within each folder there is one query and its 10 predictions, therefore 11 files
+    assert len(paths) == 11
     query_path = paths[0]
-    query_centerpoint = util_matching.get_centerpoint_from_query_path(query_path)
     preds_paths = paths[1:]
-    for pred_idx, surrounding_pred_path in enumerate(preds_paths):
+
+    query_centerpoint = util_matching.get_centerpoint_from_query_path(query_path)
+    for pred_idx, pred_path in enumerate(preds_paths):
         try:
             query_log_dir = log_dir / query_path.stem / f"{pred_idx:02d}"
-            rot_angle = int(surrounding_pred_path.name.split("__")[2].replace("rot", ""))
+            rot_angle = int(pred_path.name.split("__")[2].replace("rot", ""))
             assert rot_angle % 90 == 0
             query_image = matcher.image_loader(query_path, args.img_size).to(args.device)
             query_image = tfm.functional.rotate(query_image, rot_angle)
-            surrounding_image = matcher.image_loader(surrounding_pred_path, args.img_size*3).to(args.device)
-            surrounding_img_footprint = util_matching.path_to_footprint(surrounding_pred_path)
+            surrounding_image = matcher.image_loader(pred_path, args.img_size*3).to(args.device)
+            pred_footprint = util_matching.path_to_footprint(pred_path)
             
             if args.save_images:
                 query_log_dir.mkdir(exist_ok=True, parents=True)
@@ -89,12 +91,12 @@ for folder in tqdm(queries_input_folders):
                     query_image,
                     surrounding_image,
                     matcher,
-                    surrounding_img_footprint,
+                    pred_footprint,
                     HW=args.img_size,
                     save_images=args.save_images,
                     viz_params=viz_params
                 )
-                if num_inliers == 0:
+                if num_inliers == -1:
                     # The iterative search is interruped due to invalid matching
                     found_match = False
                     logging.debug(f"{query_path.stem} {pred_idx=} {iteration=:02d} MSG1_NOT_FOUND {num_inliers=}")
