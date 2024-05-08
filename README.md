@@ -1,6 +1,6 @@
 # EarthMatch
 
-EarthMatch is an image-matching / coregistration pipeline used to localize photos taken by astronauts aboard the ISS. It takes as input a pair of images, the astronaut photo to be localized and a potential candidate (obtain from a retrieval method like EarthLoc) and, if the two images do overlap, it outputs their precise coregistration.
+EarthMatch (CVPR 2024 IMW) is an image-matching / coregistration pipeline used to localize photos taken by astronauts aboard the ISS. It takes as input a pair of images, the astronaut photo to be localized and a potential candidate (obtain from a retrieval method like EarthLoc) and, if the two images do overlap, it outputs their precise coregistration.
 
 <p float="left">
   <img src="https://earthloc-and-earthmatch.github.io/static/images/pipeline.png" />
