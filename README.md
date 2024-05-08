@@ -2,9 +2,20 @@
 
 EarthMatch is an image-matching / coregistration pipeline used to localize photos taken by astronauts aboard the ISS. It takes as input a pair of images, the astronaut photo to be localized and a potential candidate (obtain from a retrieval method like EarthLoc) and, if the two images do overlap, it outputs their precise coregistration.
 
+<p float="left">
+  <img src="https://earthloc-and-earthmatch.github.io/static/images/pipeline.png" />
+</p>
+
 [Check out our webpage](https://earthloc-and-earthmatch.github.io/)
 
-The paper, called "EarthMatch: Iterative Coregistration for Fine-grained Localization of Astronaut Photography" is accepted to the 2024 CVPR workshop of "Image Matching: Local Features & Beyond 2024".
+The paper, called "EarthMatch: Iterative Coregistration for Fine-grained Localization of Astronaut Photography" is accepted to the 2024 CVPR workshop of "Image Matching: Local Features & Beyond 2024". Below you can see how the iterative coregistration takes place (4 iterations, num keypoints usually increasing with more iterations).
+
+<p float="left">
+  <img src="https://earthloc-and-earthmatch.github.io/static/images/qualitative/gifs/gif1.gif" height="150" />
+  <img src="https://earthloc-and-earthmatch.github.io/static/images/qualitative/gifs/gif2.gif" height="150" />
+  <img src="https://earthloc-and-earthmatch.github.io/static/images/qualitative/gifs/gif3.gif" height="150" />
+  <img src="https://earthloc-and-earthmatch.github.io/static/images/qualitative/gifs/gif4.gif" height="150" />
+</p>
 
 ## Run the experiments
 
