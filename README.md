@@ -37,12 +37,12 @@ You can set the matcher to any of the 17 matchers used in the [image-matching-mo
 
 
 ## Cite
-```
-@InProceedings{Berton_2024_EarthMatch,
+```bibtex
+@inproceedings{Berton_2024_EarthMatch,
     author    = {Berton, Gabriele and Goletto, Gabriele and Trivigno, Gabriele and Stoken, Alex and Caputo, Barbara and Masone, Carlo},
     title     = {EarthMatch: Iterative Coregistration for Fine-grained Localization of Astronaut Photography},
-    booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) Workshops},
+    booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops},
     month     = {June},
-    year      = {2024},
+    year      = {2024}
 }
 ```
